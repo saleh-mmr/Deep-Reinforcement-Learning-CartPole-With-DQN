@@ -1,198 +1,166 @@
-# Double Deep Q-Network (Double DQN) for CartPole-v1
+-# MountainCar & Cartpole Separate Training
 
-This project implements a Double Deep Q-Network (Double DQN) to solve the CartPole-v1 control problem using the Gymnasium reinforcement learning environment. The objective of the task is to balance an inverted pendulum on a moving cart by applying left or right force.
+A PyTorch-based Deep Q-Network (DQN) implementation for training RL agents on classic control environments from OpenAI Gymnasium. This project provides separate training pipelines for CartPole and MountainCar environments with support for model checkpointing and visualization.
 
-The implementation emphasizes:
+## Project Overview
 
-* Stability in learning (soft target updates)
-* Data efficiency (experience replay)
-* Controlled and scaled inputs (observation normalization)
-* Reproducibility and structured software engineering
+This project implements a DQN agent that learns to solve control tasks through reinforcement learning. The agent uses:
+- **Deep Q-Learning**: A value-based reinforcement learning algorithm
+- **Experience Replay**: Samples from a memory buffer to break correlations in training data
+- **Epsilon-Greedy Exploration**: Balances exploration and exploitation during learning
+- **Neural Networks**: Feed-forward networks to approximate Q-value functions
 
-The system is coded in Python using PyTorch for deep learning.
-
----
-
-## 1. Algorithm Overview
-
-### 1.1 Deep Q-Network (DQN)
-
-DQN uses a neural network Q(s, a; θ) to estimate the optimal action-value function:
-
-[
-Q^*(s, a) = \max_\pi \mathbb{E}[,r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \dots \mid s_t=s, a_t=a, \pi,]
-]
-
-### 1.2 Double DQN Enhancement
-
-Standard DQN tends to **overestimate** Q-values due to coupling of action selection and evaluation. Double DQN decouples them:
-
-* The **main network** selects the next action:
-  [
-  a' = \arg\max_a Q_{\text{main}}(s', a)
-  ]
-
-* The **target network** evaluates it:
-  [
-  y = r + \gamma , Q_{\text{target}}(s', a')
-  ]
-
-This results in more stable and accurate value estimation.
-
-### 1.3 Soft Target Network Updates (Polyak Averaging)
-
-Instead of infrequent and abrupt hard updates, the target network parameters are updated gradually:
-
-[
-\theta_{\text{target}} \leftarrow \tau , \theta_{\text{main}} + (1-\tau), \theta_{\text{target}}
-]
-
-where ( \tau \in (0,1) ).
-This smooth transition helps prevent training divergence.
-
----
-
-## 2. Key Features
-
-| Feature                       | Purpose                                        |
-| ----------------------------- | ---------------------------------------------- |
-| Double Q-learning             | Reduces action-value overestimation            |
-| Soft target updates (τ=0.005) | Improves convergence stability                 |
-| Replay memory                 | Breaks correlation and reuses past transitions |
-| Epsilon-greedy exploration    | Balances exploration vs. exploitation          |
-| Normalized observations       | Supports better gradient scaling               |
-| Training diagnostics          | Reward, loss and epsilon plots                 |
-
-This implementation follows best practices recommended in modern RL research.
-
----
-
-## 3. Observation and Action Spaces
-
-### Observation (input to neural network)
-
-4 continuous features:
-
-1. Cart position
-2. Cart velocity
-3. Pole angle
-4. Pole angular velocity
-
-These are normalized into the range [0, 1] to improve learning dynamics.
-
-### Action Space
-
-* Discrete(2): apply left or right force
-
----
-
-## 4. Project Structure
+## Project Structure
 
 ```
-DoubleDQN/
-│
-├── dqn_agent.py              # Double DQN algorithm (learning + soft updates)
-├── dqn_network.py            # Fully connected neural network architecture
-├── replay_memory.py          # Experience replay buffer
-├── model_train_test.py       # Training loop, evaluation loop, plotting
-├── step_wrapper.py           # Observation normalization wrapper
-├── config.py                 # Device selection, random seeds
-├── run.py                    # Entry point for training/testing
-│
-├── plots/                    # Output graphs for reward, loss, epsilon
-└── weights/                  # Saved model states during training
+MountainCar_Cartpole_Separate_Training/
+├── agents/                    # DQN agent implementation
+│   └── agent.py              # Main DQNAgent class with learning logic
+├── envs/                      # Environment wrappers
+│   └── cartpole.py           # CartPole-v1 environment wrapper
+├── learning/                  # Training orchestration
+│   └── trainer.py            # Trainer class coordinating training loops
+├── memory/                    # Experience replay buffer
+│   └── replay_memory.py       # ReplayMemory class
+├── network/                   # Neural network architectures
+│   └── network.py            # DQNNetwork (feed-forward Q-network)
+├── scripts/                   # Entry points and evaluation scripts
+│   ├── script.py             # Main training/evaluation script
+│   └── best_model_seed_49.pth # Saved model checkpoint
+├── utils/                     # Configuration and utilities
+│   └── config.py             # Global device configuration
+└── README.md                  # This file
 ```
 
-Code is structured for readability, modularity, and future extensibility.
+## Components
 
----
+### Agent (`agents/agent.py`)
+- **DQNAgent**: Implements the core DQN learning algorithm
+  - Maintains a Q-network for action-value estimation
+  - Uses experience replay memory for stable learning
+  - Implements epsilon-greedy exploration strategy
+  - Optimizes network weights using RMSprop optimizer
 
-## 5. Training Configuration
+### Environments (`envs/cartpole.py`)
+- **CartPoleEnv**: Wrapper around Gymnasium's CartPole-v1
+  - Configurable time limits per episode
+  - Reproducible seeds for deterministic behavior
+  - Exposes action and observation spaces
 
-| Parameter             | Default       | Importance                       |
-| --------------------- | ------------- | -------------------------------- |
-| Learning Rate         | 1e-4          | Stable Q-learning optimization   |
-| Discount Factor (γ)   | 0.90          | Short-term reward prioritization |
-| Replay Memory Size    | 150,000       | Large sample diversity           |
-| Batch Size            | 128           | Balanced learning updates        |
-| Max Steps per Episode | 500           | Standard CartPole-v1 limit       |
-| Soft update rate (τ)  | 0.005         | Slow stable target transfer      |
-| Exploration ε         | 1.0 → 0.02    | Gradually reduces randomness     |
-| Epsilon decay         | 0.999/episode | Controls exploration schedule    |
+### Training (`learning/trainer.py`)
+- **Trainer**: Coordinates the training pipeline
+  - Manages training episodes and hyperparameters
+  - Tracks rewards and loss over time
+  - Saves best-performing model checkpoints
+  - Handles model evaluation
 
-The model is typically trained for up to **3000 episodes**, though convergence can occur sooner.
+### Memory (`memory/replay_memory.py`)
+- **ReplayMemory**: Experience replay buffer
+  - Stores state transitions (state, action, reward, next_state, done)
+  - Supports random sampling for mini-batch training
+  - Configurable capacity with FIFO eviction
 
----
+### Network (`network/network.py`)
+- **DQNNetwork**: Feed-forward neural network
+  - Two hidden layers with ReLU activation
+  - Outputs Q-values for each action
+  - PyTorch Module for GPU/CPU compatibility
 
-## 6. Running the Project
+### Configuration (`utils/config.py`)
+- Global device management (CUDA/CPU)
+- CUDA optimization flags for debugging
+- Memory management
 
-### Training
+## Installation
 
-In `run.py`, set:
+### Requirements
+- Python 3.8+
+- PyTorch
+- Gymnasium
+- NumPy
+- Matplotlib
+
+### Setup
+
+1. Clone or navigate to the project directory
+2. Install dependencies:
+```bash
+pip install torch gymnasium numpy matplotlib
+```
+
+## Usage
+
+### Training a New Model
+
+Edit `scripts/script.py` to set `train_mode = True`:
+
+```bash
+python scripts/script.py
+```
+
+This will:
+- Train a DQN agent on CartPole-v1 for 600 episodes
+- Track rewards and loss across episodes
+- Save the best model checkpoint
+- Generate performance plots
+
+### Evaluating a Saved Model
+
+Set `train_mode = False` in `scripts/script.py` and run:
+
+```bash
+python scripts/script.py
+```
+
+## Hyperparameters
+
+Configure hyperparameters in `scripts/script.py`:
 
 ```python
-train_mode = True
+hyperparams = {
+    "discount_factor": 0.99,      # Gamma - future reward discount rate
+    "batch_size": 100,            # Mini-batch size for training
+    "memory_capacity": 10000,     # Max replay memory size
+    "max_episodes": 600,          # Total training episodes
+    "goal": 200,                  # Target episode reward/time limit
+    "network_size": 20,           # Hidden layer size
+    "epsilon_max": 1.0,           # Initial exploration rate
+    "epsilon_min": 0.01,          # Final exploration rate
+    "epsilon_decay": 0.00005,     # Decay rate per step
+}
 ```
 
-Then execute:
+## Training Details
 
-```bash
-python run.py
-```
+### DQN Algorithm
+The agent learns by:
+1. Taking actions using epsilon-greedy policy
+2. Storing transitions in replay memory
+3. Sampling mini-batches from memory
+4. Computing target Q-values with future rewards
+5. Minimizing MSE loss between predicted and target Q-values
+6. Updating epsilon for annealed exploration
 
-### Testing (Evaluation)
+### Loss Function
+Mean Squared Error (MSE) between predicted Q-values and TD targets
 
-To run the trained model with visual rendering:
+### Optimizer
+RMSprop with learning rate 0.001
 
-```bash
-python run.py
-```
+## Model Checkpoint
 
-`train_mode = False` automatically loads the saved model and disables exploration.
+Trained model weights are saved in `scripts/best_model_seed_49.pth` using PyTorch's state_dict format. This allows quick evaluation without retraining.
 
----
+## Performance
 
-## 7. Results and Output
+The agent learns to achieve high rewards on CartPole-v1 through DQN training. Performance is tracked via:
+- Episode rewards over time
+- Loss curves during training
+- Running average reward windows
+- 
+## Notes
 
-After training completes, three performance plots are generated:
-
-1. Reward achieved per episode (with 50-episode moving average)
-2. Loss curve across training updates
-3. Epsilon decay per episode
-
-These are saved in:
-
-```
-plots/reward_plot.png
-plots/loss_plot.png
-plots/epsilon_plot.png
-```
-
-The environment is considered solved when:
-
-* The agent achieves an average reward ≥ 475 over 100 episodes
-* Maximum episode reward is 500 (no failure within time limit)
-
-Soft update and normalized observations significantly enhance reliability of reaching solving criteria.
-
----
-
-## 8. Future Work
-
-Potential improvements include:
-
-* Reward clipping for improved numerical stability
-* Per-step epsilon decay rather than per-episode
-* Prioritized Experience Replay (PER)
-* Dueling DQN architecture
-* Noisy networks for exploration enhancement
-* Support for visualization video export
-
-These extensions can further enhance learning performance and robustness.
-
----
-
-## 9. License and Use
-
-This implementation is open for academic, educational, and research purposes.
-Users may modify and extend the system to investigate reinforcement learning behavior in control tasks.
+- GPU/CPU device is automatically detected and configured
+- Seeds ensure reproducible training runs
+- All paths use relative imports for modularity
+- CUDA synchronization is enabled for easier debugging
