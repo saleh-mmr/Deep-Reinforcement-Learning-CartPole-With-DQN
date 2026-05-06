@@ -1,6 +1,6 @@
--# MountainCar & Cartpole Separate Training
+#  Cartpole Training
 
-A PyTorch-based Deep Q-Network (DQN) implementation for training RL agents on classic control environments from OpenAI Gymnasium. This project provides separate training pipelines for CartPole and MountainCar environments with support for model checkpointing and visualization.
+A PyTorch-based Deep Q-Network (DQN) implementation for training RL agents on classic control environments from OpenAI Gymnasium. This project provides training pipeline for CartPole environments with support for model checkpointing and visualization.
 
 ## Project Overview
 
