@@ -1,10 +1,8 @@
 import os
 import random
 import sys
-
 import numpy as np
 import torch
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from agents.agent import DQNAgent
 from envs.cartpole import CartPoleEnv
