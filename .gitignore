@@ -165,3 +165,7 @@ checkpoints/
 # Docker
 docker-compose.override.yml
 
+
+.idea/
+__pycache__/
+*.pyc
